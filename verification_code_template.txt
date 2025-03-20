@@ -1,0 +1,9 @@
+Thank you for signing up for [Your App Name]!
+
+To complete your registration, please enter the following verification code in the app:
+
+{{ .Token }}
+
+This code will expire in 24 hours.
+
+If you did not sign up for this account, please ignore this email. 
