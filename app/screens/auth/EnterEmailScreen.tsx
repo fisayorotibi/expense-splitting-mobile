@@ -58,86 +58,41 @@ export default function EnterEmailScreen() {
       // First navigate to verify email screen - don't wait for API calls to complete
       navigation.navigate('VerifyEmail', { email });
       
-      // Check if email exists in Supabase
-      try {
-        // First approach: Try to sign in with an invalid password
-        // If we get an "Invalid login credentials" error, we know the email exists
-        // If we get a different error, the email might not exist
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password: 'check_if_account_exists_123456'
-        });
-
-        if (signInError) {
-          // The email exists if the error contains "Invalid login credentials"
-          if (signInError.message.includes('Invalid login credentials')) {
-            console.log('Email exists in Supabase (password check), sending verification code');
-            await resendCode(email);
-            await markUserHasAccount();
-            setLoading(false);
-            return;
-          }
-        } else {
-          // If no error, somehow the password worked (extremely unlikely)
-          // Email definitely exists
-          console.log('Email exists in Supabase (unexpected successful login), sending verification code');
-          await supabase.auth.signOut(); // Sign out immediately
-          await resendCode(email);
-          await markUserHasAccount();
-          setLoading(false);
-          return;
-        }
-        
-        // Second approach: Try to reset password for this email
-        // This will typically succeed even if the email doesn't exist in Supabase
-        // But we can check for specific errors
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: undefined
-        });
-        
-        if (resetError) {
-          if (!resetError.message.includes('For security purposes')) {
-            // If we get an error that's not the generic security message,
-            // the email might not exist
-            console.log('Password reset error suggests email may not exist:', resetError.message);
-          } else {
-            // This is the typical response, doesn't tell us much
-            console.log('Password reset response inconclusive');
-          }
-        } else {
-          // Successfully sent reset email - this could indicate the email exists
-          console.log('Successfully sent password reset - email might exist');
-        }
-        
-      } catch (checkError) {
-        console.log('Email existence check error:', checkError);
-        // Continue with signup attempt if check fails
-      }
-      
-      // If we get here, we're not sure if the email exists - try creating a temporary account
-      // Create a temporary password - user will set their real password later
+      // Directly try to create an account without checking if it exists
+      // This handles the case where a user was deleted but the email is still reserved
       const tempPassword = `Temp${Math.random().toString(36).slice(-8)}${Math.random().toString(10).slice(-2)}!`;
       
-      // Create the temporary user account
-      console.log('Attempting to create temporary account for email:', email);
+      console.log('Attempting to create account for email:', email);
       const { error, userId } = await signUp(email, tempPassword, '');
       
       if (error) {
         // Handle different error cases
         if (error.message?.includes('already registered')) {
-          console.log('Email already registered (from signup response), sending verification code');
-          await resendCode(email);
+          console.log('Email already registered, sending verification code');
+          
+          // Even if the email is registered (or was deleted but still reserved),
+          // we can still send a verification code to it
+          const { error: resendError } = await resendCode(email);
+          
+          if (resendError) {
+            console.error('Error sending verification code:', resendError.message);
+            // If we can't send verification code, the user might be in an invalid state
+            // Let's try to continue with signup flow anyway
+          } else {
+            console.log('Successfully sent verification code');
+          }
+          
           await markUserHasAccount();
           return;
         }
         
         // If we get here, there was an unexpected error
-        console.error('Error creating temporary account:', error.message);
+        console.error('Error creating account:', error.message);
         return;
       }
       
       // New account was created successfully
-      console.log('Created temporary account with ID:', userId);
+      console.log('Created new account with ID:', userId);
       await markUserHasAccount();
       
       // Send the verification code for the new account
