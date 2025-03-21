@@ -5,36 +5,30 @@ import { supabase } from '../services/supabase';
 import { AuthNavigator } from './AuthNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
 import { Session } from '@supabase/supabase-js';
+import { stackScreenOptions } from '../utils/navigationTheme';
+import { useAuth } from '../context/AuthContext';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { session, profile, loading } = useAuth();
 
-  useEffect(() => {
-    // Check for an existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  // If auth context is still loading, show nothing
   if (loading) {
-    // You might want to add a loading screen here
     return null;
   }
 
+  // We require both a valid session AND a profile to consider the user logged in
+  const isAuthenticated = !!session && !!profile;
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {session ? (
+    <Stack.Navigator 
+      screenOptions={{ 
+        ...stackScreenOptions,
+        headerShown: false 
+      }}
+    >
+      {isAuthenticated ? (
         <Stack.Screen name="Main" component={MainTabNavigator} />
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />
