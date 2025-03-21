@@ -1,0 +1,175 @@
+import React from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView,
+  StatusBar,
+  Image
+} from 'react-native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { AuthStackParamList, RootStackParamList } from '../../navigation/types';
+import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Button } from '../../components/Button';
+
+type CongratulationsScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Congratulations'>;
+type CongratulationsScreenRouteProp = RouteProp<AuthStackParamList, 'Congratulations'>;
+
+export default function CongratulationsScreen() {
+  const navigation = useNavigation();
+  const route = useRoute<CongratulationsScreenRouteProp>();
+  
+  const { email } = route.params;
+
+  const handleContinue = () => {
+    // Use CommonActions to reset to the root navigator
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      })
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      <View style={styles.content}>
+        <View style={styles.iconCircle}>
+          <Ionicons name="checkmark" size={80} color={colors.white} />
+        </View>
+        
+        <Text style={styles.title}>Welcome to Expense Splitter!</Text>
+        <Text style={styles.subtitle}>
+          Your account has been created successfully. You're all set to start tracking and splitting expenses with friends.
+        </Text>
+        
+        <Text style={styles.emailInfo}>
+          Signed in as <Text style={styles.emailHighlight}>{email}</Text>
+        </Text>
+        
+        <View style={styles.features}>
+          <View style={styles.feature}>
+            <Ionicons name="people-outline" size={26} color={colors.primary} style={styles.featureIcon} />
+            <View style={styles.featureTextContainer}>
+              <Text style={styles.featureTitle}>Create Circles</Text>
+              <Text style={styles.featureDescription}>Organize expenses in circles with friends, family, or roommates</Text>
+            </View>
+          </View>
+          
+          <View style={styles.feature}>
+            <Ionicons name="calculator-outline" size={26} color={colors.primary} style={styles.featureIcon} />
+            <View style={styles.featureTextContainer}>
+              <Text style={styles.featureTitle}>Split Expenses</Text>
+              <Text style={styles.featureDescription}>Easily track who owes what and settle up with minimal fuss</Text>
+            </View>
+          </View>
+          
+          <View style={styles.feature}>
+            <Ionicons name="analytics-outline" size={26} color={colors.primary} style={styles.featureIcon} />
+            <View style={styles.featureTextContainer}>
+              <Text style={styles.featureTitle}>Track Spending</Text>
+              <Text style={styles.featureDescription}>See your spending history and patterns at a glance</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={handleContinue}
+          fullWidth
+          variant="primary"
+          style={styles.continueButton}
+        >
+          Get Started
+        </Button>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl * 1.5,
+    paddingBottom: spacing.xl,
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  title: {
+    fontSize: fontSizes.xxxl,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: fontSizes.md,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  emailInfo: {
+    fontSize: fontSizes.md,
+    color: colors.text.secondary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
+  emailHighlight: {
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  features: {
+    width: '100%',
+    marginTop: spacing.lg,
+  },
+  feature: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  featureIcon: {
+    marginTop: 2,
+    marginRight: spacing.md,
+  },
+  featureTextContainer: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: fontSizes.md,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  featureDescription: {
+    fontSize: fontSizes.sm,
+    color: colors.text.secondary,
+    lineHeight: 20,
+  },
+  buttonContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  continueButton: {
+    height: 56,
+  },
+}); 
