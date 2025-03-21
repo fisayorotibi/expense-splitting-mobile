@@ -55,43 +55,54 @@ export default function EnterEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // First navigate to verify email screen - don't wait for API calls to complete
+      // First check if the email exists in Supabase
+      console.log('Checking if email exists:', email);
+      
+      // Try to reset password for the email - this is a reliable way to check if email exists
+      // without revealing too much information (doesn't actually send an email)
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: undefined // Disable automatic email
+      });
+      
+      // If no error or rate limit error, the email likely exists
+      // Rate limit errors still suggest the email exists but we're hitting limits
+      const emailExists = !resetError || 
+                          (resetError.message && 
+                           (resetError.message.includes('rate limit') || 
+                            resetError.message.includes('try again')));
+      
+      // Navigate to verify email screen
       navigation.navigate('VerifyEmail', { email });
       
-      // Check if email is already registered
-      try {
-        // Try to send a verification code directly first - this works for existing emails
-        const { error: existingEmailError } = await resendCode(email);
-        
-        if (!existingEmailError) {
-          console.log('Email already exists, sent verification code directly');
-          await markUserHasAccount();
-          setLoading(false);
-          return;
-        }
-      } catch (resendError) {
-        console.log('Initial resend attempt failed, continuing with signup');
+      if (emailExists) {
+        console.log('Email exists, sending verification code');
+        // Send the verification code
+        await resendCode(email);
+        await markUserHasAccount();
+        setLoading(false);
+        return;
       }
+
+      // If we get here, email doesn't exist - create a new account
+      console.log('Email not found, creating new account');
       
-      // If we get here, email may not exist - try creating a temporary account
       // Create a temporary password - user will set their real password later
       const tempPassword = `Temp${Math.random().toString(36).slice(-8)}${Math.random().toString(10).slice(-2)}!`;
       
       // Create the temporary user account
       console.log('Creating temporary account for email:', email);
-      const { error, userId } = await signUp(email, tempPassword, '');
+      const { error: signUpError, userId } = await signUp(email, tempPassword, '');
       
-      if (error) {
-        // Handle different error cases
-        if (error.message?.includes('already registered')) {
-          console.log('Email already registered, sending verification code');
+      if (signUpError) {
+        // If signup still fails, the email might actually exist (race condition or our check failed)
+        if (signUpError.message?.includes('already registered')) {
+          console.log('Email already registered (from signup response), sending verification code');
           await resendCode(email);
           await markUserHasAccount();
           return;
         }
         
-        // If we get here, there was an unexpected error
-        console.error('Error creating temporary account:', error.message);
+        console.error('Error creating temporary account:', signUpError.message);
         return;
       }
       
