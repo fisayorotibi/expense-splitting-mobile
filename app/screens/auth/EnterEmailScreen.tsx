@@ -55,35 +55,32 @@ export default function EnterEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // Create a temporary password - user will set their real password later
-      const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(10).slice(-2);
-      
-      // First navigate to verify email screen - don't wait for API calls to complete
-      navigation.navigate('VerifyEmail', { email });
-      
-      // Then do the account creation and verification code sending in the background
-      // Try to create the user account
-      const { error, userId } = await signUp(email, tempPassword, '');
-      
-      if (error) {
-        // Handle different error cases
-        if (error.message?.includes('already registered')) {
-          // Email already exists - try to send verification code
-          await resendCode(email);
-          // Mark that this user has an account (even if it's not verified yet)
-          await markUserHasAccount();
-          return;
+      // First check if account exists for this email
+      const { data } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          // Just check if email exists, don't actually log in
+          shouldCreateUser: false
         }
-        
-        // If we get here, there was an error but we've already navigated away
-        console.error('Error creating account:', error.message);
+      });
+
+      // If email exists, send verification code then continue
+      if (data) {
+        await resendCode(email);
+        // Mark that this user has an account
+        await markUserHasAccount();
+        // Navigate to verify email
+        navigation.navigate('VerifyEmail', { email });
         return;
       }
       
-      // New account was created successfully
-      await markUserHasAccount();
+      // If we got here, email doesn't exist yet, so we'll send verification
+      // then create account in the normal flow
       
-      // Send the verification code
+      // First navigate to verify email screen
+      navigation.navigate('VerifyEmail', { email });
+      
+      // Send verification code
       const { error: resendError } = await resendCode(email);
       
       if (resendError) {
@@ -91,6 +88,7 @@ export default function EnterEmailScreen() {
       }
     } catch (error) {
       console.error('Error in handleContinue:', error);
+      setErrorMessage('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

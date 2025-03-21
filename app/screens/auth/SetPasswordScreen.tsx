@@ -19,84 +19,64 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/Button';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
-import { markUserHasAccount } from '../../utils/accountUtils';
-import { signUp } from '../../services/auth';
 
-type ConfirmPasswordScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'ConfirmPassword'>;
-type ConfirmPasswordScreenRouteProp = RouteProp<AuthStackParamList, 'ConfirmPassword'>;
+type SetPasswordScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'SetPassword'>;
+type SetPasswordScreenRouteProp = RouteProp<AuthStackParamList, 'SetPassword'>;
 
-export default function ConfirmPasswordScreen() {
-  const [confirmPassword, setConfirmPassword] = useState('');
+export default function SetPasswordScreen() {
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
-  const navigation = useNavigation<ConfirmPasswordScreenNavigationProp>();
-  const route = useRoute<ConfirmPasswordScreenRouteProp>();
+  const navigation = useNavigation<SetPasswordScreenNavigationProp>();
+  const route = useRoute<SetPasswordScreenRouteProp>();
   
-  const { email, fullName, password } = route.params;
+  const { email, fullName } = route.params;
 
   const validatePassword = () => {
-    if (!confirmPassword) {
-      setErrorMessage('Please confirm your password');
+    if (!password) {
+      setErrorMessage('Password is required');
       return false;
     }
     
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match');
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters');
+      return false;
+    }
+
+    // Check for uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      setErrorMessage('Password must contain at least one uppercase letter');
+      return false;
+    }
+
+    // Check for number
+    if (!/[0-9]/.test(password)) {
+      setErrorMessage('Password must contain at least one number');
       return false;
     }
     
     return true;
   };
 
-  const handleCreateAccount = async () => {
+  const handleContinue = () => {
     if (!validatePassword()) return;
-
-    setLoading(true);
-    setErrorMessage(null);
-
-    try {
-      // Attempt to sign up the user with the finalized credentials
-      const { error, userId } = await signUp(email, password, fullName);
-      
-      if (error) {
-        if (error.message?.includes('already registered')) {
-          // If email already registered, try to update user data instead
-          const { error: updateError } = await supabase.auth.updateUser({
-            password,
-            data: { full_name: fullName }
-          });
-          
-          if (updateError) {
-            setErrorMessage('Could not update account: ' + updateError.message);
-            return;
-          }
-        } else {
-          setErrorMessage(error.message || 'Failed to create account');
-          return;
-        }
-      }
-      
-      // Mark that user has an account
-      await markUserHasAccount();
-      
-      // Account created/updated successfully, navigate to success screen
-      navigation.navigate('Congratulations', { email });
-    } catch (error) {
-      console.error('Error in handleCreateAccount:', error);
-      setErrorMessage('An unexpected error occurred');
-    } finally {
-      setLoading(false);
-    }
+    
+    // Navigate to confirm password screen with all required information
+    navigation.navigate('ConfirmPassword', {
+      email,
+      fullName, 
+      password
+    });
   };
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const toggleShowConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -116,8 +96,8 @@ export default function ConfirmPasswordScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           
-          <Text style={styles.title}>Confirm password</Text>
-          <Text style={styles.subtitle}>Please confirm your password to continue</Text>
+          <Text style={styles.title}>Create password</Text>
+          <Text style={styles.subtitle}>Choose a secure password for your account</Text>
           
           <View style={styles.formContainer}>
             {errorMessage && (
@@ -127,14 +107,14 @@ export default function ConfirmPasswordScreen() {
             )}
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm password</Text>
+              <Text style={styles.label}>Password</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={styles.passwordInput}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm your password"
-                  secureTextEntry={!showConfirmPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Create a password"
+                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   textContentType="newPassword"
                   autoComplete="password-new"
@@ -142,11 +122,11 @@ export default function ConfirmPasswordScreen() {
                 />
                 <TouchableOpacity 
                   style={styles.eyeIcon} 
-                  onPress={toggleShowConfirmPassword}
+                  onPress={toggleShowPassword}
                   hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                 >
                   <Ionicons 
-                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
                     size={22} 
                     color={colors.text.tertiary} 
                   />
@@ -154,14 +134,42 @@ export default function ConfirmPasswordScreen() {
               </View>
             </View>
             
+            <View style={styles.passwordRequirements}>
+              <Text style={styles.requirementsTitle}>Password requirements:</Text>
+              <View style={styles.requirement}>
+                <Ionicons 
+                  name={password.length >= 8 ? "checkmark-circle" : "ellipse-outline"} 
+                  size={16} 
+                  color={password.length >= 8 ? colors.secondary : colors.text.tertiary} 
+                />
+                <Text style={styles.requirementText}>At least 8 characters</Text>
+              </View>
+              <View style={styles.requirement}>
+                <Ionicons 
+                  name={/[A-Z]/.test(password) ? "checkmark-circle" : "ellipse-outline"} 
+                  size={16} 
+                  color={/[A-Z]/.test(password) ? colors.secondary : colors.text.tertiary} 
+                />
+                <Text style={styles.requirementText}>At least one uppercase letter</Text>
+              </View>
+              <View style={styles.requirement}>
+                <Ionicons 
+                  name={/[0-9]/.test(password) ? "checkmark-circle" : "ellipse-outline"} 
+                  size={16} 
+                  color={/[0-9]/.test(password) ? colors.secondary : colors.text.tertiary} 
+                />
+                <Text style={styles.requirementText}>At least one number</Text>
+              </View>
+            </View>
+            
             <Button
-              onPress={handleCreateAccount}
+              onPress={handleContinue}
               loading={loading}
               fullWidth
               variant="primary"
-              style={styles.createButton}
+              style={styles.continueButton}
             >
-              Create Account
+              Continue
             </Button>
           </View>
         </ScrollView>
@@ -243,7 +251,29 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
   },
-  createButton: {
+  passwordRequirements: {
+    marginBottom: spacing.xl,
+    padding: spacing.md,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borderRadius.md,
+  },
+  requirementsTitle: {
+    fontSize: fontSizes.sm,
+    fontWeight: '500',
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  requirement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  requirementText: {
+    fontSize: fontSizes.sm,
+    color: colors.text.secondary,
+    marginLeft: spacing.xs,
+  },
+  continueButton: {
     marginBottom: spacing.lg,
   },
 }); 

@@ -121,7 +121,7 @@ export default function VerifyEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // First attempt to verify the code
+      // First attempt to verify the code - this also signs out in AuthContext
       const { error, success } = await verifySignUpCode(email, verificationCode);
 
       if (error) {
@@ -130,19 +130,12 @@ export default function VerifyEmailScreen() {
         return;
       }
 
-      // Make a second explicit sign-out call just to be safe
-      try {
-        await supabase.auth.signOut();
-      } catch (signOutError) {
-        console.log('Extra signOut attempt:', signOutError);
-        // Continue even if this fails
-      }
-
       // Wait to ensure auth state is cleared
       setTimeout(() => {
+        // After successful verification, navigate to the account creation screen
         navigation.navigate('CreateAccount', { email });
         setLoading(false);
-      }, 1000); // Increased timeout for more reliability
+      }, 500); 
     } catch (error) {
       console.error('Error verifying code:', error);
       setErrorMessage('An error occurred. Please try again.');
