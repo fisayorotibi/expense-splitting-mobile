@@ -130,13 +130,13 @@ export default function VerifyEmailScreen() {
         return;
       }
 
-      // Successful verification - immediately navigate to display name collection
-      console.log('Email verified successfully, moving to display name collection');
+      // Successful verification - immediately navigate to Congratulations screen
+      console.log('Email verified successfully, moving to Congratulations screen');
       
       // Add a small delay to ensure any auth state changes are processed
       setTimeout(() => {
-        // Navigate to CreateAccountScreen to collect the display name
-        navigation.navigate('CreateAccount', { email });
+        // Navigate to Congratulations screen
+        navigation.navigate('Congratulations', { email });
         setLoading(false);
       }, 500);
     } catch (error) {

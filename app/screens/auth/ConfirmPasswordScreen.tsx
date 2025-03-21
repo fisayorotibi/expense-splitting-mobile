@@ -32,6 +32,7 @@ export default function ConfirmPasswordScreen() {
   
   const navigation = useNavigation<ConfirmPasswordScreenNavigationProp>();
   const route = useRoute<ConfirmPasswordScreenRouteProp>();
+  const { resendCode } = useAuth();
   
   const { email, fullName, password } = route.params;
 
@@ -56,14 +57,14 @@ export default function ConfirmPasswordScreen() {
     setErrorMessage(null);
 
     try {
-      console.log('Starting final account setup with email:', email);
+      console.log('Starting account setup with email:', email);
       
       // First sign out to ensure we're starting with a clean state
       await supabase.auth.signOut();
       
       console.log('Creating account with display name:', fullName);
       
-      // Try to create a new account with the final credentials
+      // Try to create a new account with the provided credentials
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -88,38 +89,10 @@ export default function ConfirmPasswordScreen() {
         
         if (signInError) {
           console.error('Sign in also failed:', signInError.message);
-          
-          // Last resort - try to update user data if they were using a temporary password
-          try {
-            // Try signin with OTP to get access
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-              email
-            });
-            
-            if (otpError) {
-              console.error('OTP sign in failed:', otpError.message);
-              setErrorMessage('Unable to create account. Please try the login screen with your email and password.');
-              navigation.navigate('Congratulations', { email });
-              return;
-            }
-            
-            // Update the user with the provided credentials
-            await supabase.auth.updateUser({
-              password,
-              data: { full_name: fullName }
-            });
-            
-            // Try to get the user ID again
-            const { data: userData } = await supabase.auth.getUser();
-            userId = userData?.user?.id;
-          } catch (updateError) {
-            console.error('Update user failed:', updateError);
-            setErrorMessage('Account setup failed. Please try logging in directly.');
-            navigation.navigate('Congratulations', { email });
-            return;
-          }
+          setErrorMessage('Unable to create account. Please try again or contact support.');
+          return;
         } else {
-          // Sign in succeeded with the new credentials
+          // Sign in succeeded with the provided credentials
           userId = signInData?.user?.id;
           console.log('Signed in with provided credentials, user ID:', userId);
         }
@@ -151,17 +124,26 @@ export default function ConfirmPasswordScreen() {
         }
       } else {
         console.error('No user ID available for profile creation');
-        setErrorMessage('Account created but profile setup failed. Please complete profile setup in settings.');
+        setErrorMessage('Account creation failed. Please try again.');
+        return;
       }
       
       // Mark that user has completed account setup
       await markUserHasAccount();
       
-      // Sign out and let the user log in fresh with their new credentials
+      // Send the verification code for the new account
+      const { error: resendError } = await resendCode(email);
+      
+      if (resendError) {
+        console.error('Error sending verification code:', resendError.message);
+        setErrorMessage('Account created but failed to send verification code. Please continue anyway.');
+      }
+      
+      // Sign out and let the user verify their email
       await supabase.auth.signOut();
       
-      // Show success screen
-      navigation.navigate('Congratulations', { email });
+      // Navigate to VerifyEmail screen
+      navigation.navigate('VerifyEmail', { email });
     } catch (error) {
       console.error('Error in handleCreateAccount:', error);
       setErrorMessage('An unexpected error occurred. Please try again or contact support.');
@@ -240,7 +222,7 @@ export default function ConfirmPasswordScreen() {
               variant="primary"
               style={styles.createButton}
             >
-              Create Account
+              Continue
             </Button>
           </View>
         </ScrollView>

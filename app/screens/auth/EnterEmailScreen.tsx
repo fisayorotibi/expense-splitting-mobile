@@ -55,54 +55,11 @@ export default function EnterEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // First navigate to verify email screen - don't wait for API calls to complete
-      navigation.navigate('VerifyEmail', { email });
-      
-      // Directly try to create an account without checking if it exists
-      // This handles the case where a user was deleted but the email is still reserved
-      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}${Math.random().toString(10).slice(-2)}!`;
-      
-      console.log('Attempting to create account for email:', email);
-      const { error, userId } = await signUp(email, tempPassword, '');
-      
-      if (error) {
-        // Handle different error cases
-        if (error.message?.includes('already registered')) {
-          console.log('Email already registered, sending verification code');
-          
-          // Even if the email is registered (or was deleted but still reserved),
-          // we can still send a verification code to it
-          const { error: resendError } = await resendCode(email);
-          
-          if (resendError) {
-            console.error('Error sending verification code:', resendError.message);
-            // If we can't send verification code, the user might be in an invalid state
-            // Let's try to continue with signup flow anyway
-          } else {
-            console.log('Successfully sent verification code');
-          }
-          
-          await markUserHasAccount();
-          return;
-        }
-        
-        // If we get here, there was an unexpected error
-        console.error('Error creating account:', error.message);
-        return;
-      }
-      
-      // New account was created successfully
-      console.log('Created new account with ID:', userId);
-      await markUserHasAccount();
-      
-      // Send the verification code for the new account
-      const { error: resendError } = await resendCode(email);
-      
-      if (resendError) {
-        console.error('Error sending verification code:', resendError.message);
-      }
+      // Just navigate to CreateAccount screen without creating an account yet
+      navigation.navigate('CreateAccount', { email });
     } catch (error) {
       console.error('Error in handleContinue:', error);
+      setErrorMessage('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
