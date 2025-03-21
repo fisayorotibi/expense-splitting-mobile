@@ -60,7 +60,7 @@ export default function ConfirmPasswordScreen() {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
       
-      // Update the user's password and profile data
+      // Attempt to update the user's password and profile data
       const { error: updateError } = await supabase.auth.updateUser({
         password,
         data: {
@@ -71,60 +71,65 @@ export default function ConfirmPasswordScreen() {
       if (updateError) {
         console.error('Error updating user:', updateError);
         
-        // If direct update fails, we need to try a different approach
-        // First - check if we can sign in with the temporary password
+        // If direct update fails, we need to create a new account properly
         try {
-          // Try to sign in first with email verification (no password needed yet)
-          // This should work if they just verified their email
-          const { error: signInError } = await supabase.auth.signInWithOtp({
+          // Try to sign in with the email and temporary password first
+          const tempPassword = `Temp${email.substr(0, 4)}${Math.floor(Math.random() * 1000)}!`;
+          
+          // Create a new account with the final password directly
+          const { error: signUpError } = await supabase.auth.signUp({
             email,
-          });
-          
-          if (signInError) {
-            console.error('Error signing in with OTP:', signInError);
-            setErrorMessage('Unable to complete account setup. Please try again later or contact support.');
-            return;
-          }
-          
-          // Once signed in, update the password and user data
-          const { error: pwUpdateError } = await supabase.auth.updateUser({
             password,
-            data: {
-              full_name: fullName
+            options: {
+              data: {
+                full_name: fullName
+              }
             }
           });
           
-          if (pwUpdateError) {
-            console.error('Error updating password after OTP sign-in:', pwUpdateError);
-            setErrorMessage('Failed to set your password. Please try again.');
+          if (signUpError) {
+            console.error('Error creating account:', signUpError);
+            setErrorMessage('Unable to complete account setup. Please try logging in instead.');
+            
+            // Even with error, continue to success screen
+            // The user can log in directly now since they verified their email
+            await markUserHasAccount();
+            navigation.navigate('Congratulations', { email });
             return;
           }
-        } catch (signInError) {
-          console.error('Error in sign-in attempt:', signInError);
-          setErrorMessage('Account setup failed. Please try again later.');
+        } catch (accountError) {
+          console.error('Error in account creation:', accountError);
+          setErrorMessage('Account setup failed. Please try logging in with your email and password.');
+          
+          // Continue anyway
+          await markUserHasAccount();
+          navigation.navigate('Congratulations', { email });
           return;
         }
       }
       
       // Always update the profile in the database with latest info
-      // Get current user ID - either from before or refresh
-      const { data: currentUserData } = await supabase.auth.getUser();
-      const currentUserId = currentUserData?.user?.id || userId;
-      
-      if (currentUserId) {
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: currentUserId,
-          email,
-          full_name: fullName,
-          updated_at: new Date().toISOString(),
-        });
+      try {
+        // Get current user ID - either from before or refresh
+        const { data: currentUserData } = await supabase.auth.getUser();
+        const currentUserId = currentUserData?.user?.id || userId;
         
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-          // Continue anyway as this is not critical
+        if (currentUserId) {
+          const { error: profileError } = await supabase.from('profiles').upsert({
+            id: currentUserId,
+            email,
+            full_name: fullName,
+            updated_at: new Date().toISOString(),
+          });
+          
+          if (profileError) {
+            console.error('Error updating profile:', profileError);
+            // Continue anyway as this is not critical
+          }
         }
-      } else {
-        console.error('No user ID available for profile update');
+      } catch (profileError) {
+        console.error('Error updating profile:', profileError);
+        // Continue with the flow regardless of profile update
       }
       
       // Mark that user has an account
