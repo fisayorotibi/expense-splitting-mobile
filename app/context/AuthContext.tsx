@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      // Create the initial account with the provided credentials
+      // Create the auth user with Supabase
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -103,23 +103,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Disable auto-confirmation email with link
           emailRedirectTo: undefined,
           data: {
+            // Store full name in user metadata
             full_name: fullName,
           }
         }
       });
 
-      // Create a profile in the profiles table for future reference
+      // If user creation is successful, create a profile entry
       if (!error && data.user) {
-        try {
-          await supabase.from('profiles').insert({
-            id: data.user.id,
-            email,
-            full_name: fullName,
-            created_at: new Date().toISOString(),
-          });
-        } catch (profileError) {
-          console.error('Error creating profile during signup:', profileError);
-          // Continue despite profile creation error - we'll try again later
+        // Create the profile with all relevant user data
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          return { error: profileError, userId: data.user.id };
         }
       }
 
@@ -139,24 +142,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       try {
+        // Always sign out first to prevent automatic login
+        await supabase.auth.signOut();
+        
         // Get the current user after verification
         const { data } = await supabase.auth.getUser();
         
-        // If we have a user, attempt to create/update profile
+        // If somehow we still have a user, attempt to create profile
+        // but don't worry if this fails - we'll create it later
         if (data?.user) {
           try {
-            await supabase.from('profiles').upsert({
+            await supabase.from('profiles').insert({
               id: data.user.id,
               email: email,
               full_name: data.user.user_metadata?.full_name || '',
               created_at: new Date().toISOString(),
             });
             
-            // Sign out after verification to require complete registration
-            // but only if we're not running in a test environment
-            if (process.env.NODE_ENV !== 'test') {
-              await supabase.auth.signOut();
-            }
+            // Sign out again to be extra sure
+            await supabase.auth.signOut();
           } catch (profileError) {
             console.error('Error creating profile after verification:', profileError);
             // Don't return error - we'll still continue the flow

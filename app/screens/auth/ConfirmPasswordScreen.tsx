@@ -20,7 +20,6 @@ import { Button } from '../../components/Button';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import { markUserHasAccount } from '../../utils/accountUtils';
-import { signUp } from '../../services/auth';
 
 type ConfirmPasswordScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'ConfirmPassword'>;
 type ConfirmPasswordScreenRouteProp = RouteProp<AuthStackParamList, 'ConfirmPassword'>;
@@ -57,31 +56,84 @@ export default function ConfirmPasswordScreen() {
     setErrorMessage(null);
 
     try {
-      // Attempt to sign up the user with the finalized credentials
-      const { error, userId } = await signUp(email, password, fullName);
+      // First try to get current user - if verified, we may still have access
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
       
-      if (error) {
-        if (error.message?.includes('already registered')) {
-          // If email already registered, try to update user data instead
-          const { error: updateError } = await supabase.auth.updateUser({
-            password,
-            data: { full_name: fullName }
+      // Update the user's password and profile data
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+        data: {
+          full_name: fullName
+        }
+      });
+      
+      if (updateError) {
+        console.error('Error updating user:', updateError);
+        
+        // If direct update fails, we need to try a different approach
+        // First - check if we can sign in with the temporary password
+        try {
+          // Try to sign in first with email verification (no password needed yet)
+          // This should work if they just verified their email
+          const { error: signInError } = await supabase.auth.signInWithOtp({
+            email,
           });
           
-          if (updateError) {
-            setErrorMessage('Could not update account: ' + updateError.message);
+          if (signInError) {
+            console.error('Error signing in with OTP:', signInError);
+            setErrorMessage('Unable to complete account setup. Please try again later or contact support.');
             return;
           }
-        } else {
-          setErrorMessage(error.message || 'Failed to create account');
+          
+          // Once signed in, update the password and user data
+          const { error: pwUpdateError } = await supabase.auth.updateUser({
+            password,
+            data: {
+              full_name: fullName
+            }
+          });
+          
+          if (pwUpdateError) {
+            console.error('Error updating password after OTP sign-in:', pwUpdateError);
+            setErrorMessage('Failed to set your password. Please try again.');
+            return;
+          }
+        } catch (signInError) {
+          console.error('Error in sign-in attempt:', signInError);
+          setErrorMessage('Account setup failed. Please try again later.');
           return;
         }
+      }
+      
+      // Always update the profile in the database with latest info
+      // Get current user ID - either from before or refresh
+      const { data: currentUserData } = await supabase.auth.getUser();
+      const currentUserId = currentUserData?.user?.id || userId;
+      
+      if (currentUserId) {
+        const { error: profileError } = await supabase.from('profiles').upsert({
+          id: currentUserId,
+          email,
+          full_name: fullName,
+          updated_at: new Date().toISOString(),
+        });
+        
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+          // Continue anyway as this is not critical
+        }
+      } else {
+        console.error('No user ID available for profile update');
       }
       
       // Mark that user has an account
       await markUserHasAccount();
       
-      // Account created/updated successfully, navigate to success screen
+      // Sign out to ensure clean slate (the user will sign in properly after)
+      await supabase.auth.signOut();
+      
+      // Account created successfully, navigate to success screen
       navigation.navigate('Congratulations', { email });
     } catch (error) {
       console.error('Error in handleCreateAccount:', error);

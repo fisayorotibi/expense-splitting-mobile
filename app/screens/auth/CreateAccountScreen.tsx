@@ -9,8 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
-  Alert
+  StatusBar
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,30 +17,30 @@ import { AuthStackParamList } from '../../navigation/types';
 import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/Button';
-import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
-import { markUserHasAccount } from '../../utils/accountUtils';
 
-type EnterEmailScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'EnterEmail'>;
-type EnterEmailScreenRouteProp = RouteProp<AuthStackParamList, 'EnterEmail'>;
+type CreateAccountScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'CreateAccount'>;
+type CreateAccountScreenRouteProp = RouteProp<AuthStackParamList, 'CreateAccount'>;
 
-export default function EnterEmailScreen() {
-  const [email, setEmail] = useState('');
+export default function CreateAccountScreen() {
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  const navigation = useNavigation<EnterEmailScreenNavigationProp>();
-  const { signUp, resendCode } = useAuth();
+  const navigation = useNavigation<CreateAccountScreenNavigationProp>();
+  const route = useRoute<CreateAccountScreenRouteProp>();
+  
+  const { email } = route.params;
 
-  const validateEmail = () => {
-    if (!email) {
-      setErrorMessage('Email is required');
+  const validateFullName = () => {
+    if (!fullName.trim()) {
+      setErrorMessage('Please enter your name');
       return false;
     }
     
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setErrorMessage('Please enter a valid email address');
+    // Very simple validation - just check that name is not too short
+    if (fullName.trim().length < 2) {
+      setErrorMessage('Name is too short');
       return false;
     }
     
@@ -49,51 +48,34 @@ export default function EnterEmailScreen() {
   };
 
   const handleContinue = async () => {
-    if (!validateEmail()) return;
+    if (!validateFullName()) return;
 
     setLoading(true);
     setErrorMessage(null);
 
     try {
-      // First navigate to verify email screen - don't wait for API calls to complete
-      navigation.navigate('VerifyEmail', { email });
-      
-      // Create a temporary password - user will set their real password later
-      // Make it strong enough to pass validation
-      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}${Math.random().toString(10).slice(-2)}!`;
-      
-      // Then do the account creation and verification code sending in the background
-      // Try to create the user account with a blank name - they'll set this later
-      const { error, userId } = await signUp(email, tempPassword, '');
-      
-      if (error) {
-        // Handle different error cases
-        if (error.message?.includes('already registered')) {
-          console.log('Email already exists, sending verification code');
-          // Email already exists - try to send verification code
-          await resendCode(email);
-          // Mark that this user has an account (even if it's not verified yet)
-          await markUserHasAccount();
-          return;
+      // Try to update the user metadata with the name, but continue even if it fails
+      // This is a best-effort update, as the main update will happen in the SetPassword screen
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          await supabase.auth.updateUser({
+            data: { full_name: fullName.trim() }
+          });
         }
-        
-        // If we get here, there was an error but we've already navigated away
-        console.error('Error creating account:', error.message);
-        return;
+      } catch (updateError) {
+        // Just log the error and continue - this is not critical
+        console.error('Could not update user metadata:', updateError);
       }
-      
-      // New account was created successfully
-      console.log('Created temporary account for:', email);
-      await markUserHasAccount();
-      
-      // Send the verification code
-      const { error: resendError } = await resendCode(email);
-      
-      if (resendError) {
-        console.error('Error sending verification code:', resendError.message);
-      }
+
+      // Navigate to password setup
+      navigation.navigate('SetPassword', { 
+        email,
+        fullName: fullName.trim() 
+      });
     } catch (error) {
       console.error('Error in handleContinue:', error);
+      setErrorMessage('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -120,8 +102,8 @@ export default function EnterEmailScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           
-          <Text style={styles.title}>Enter your email</Text>
-          <Text style={styles.subtitle}>We'll send you a code to verify your email</Text>
+          <Text style={styles.title}>Your profile</Text>
+          <Text style={styles.subtitle}>Tell us your name to create your account</Text>
           
           <View style={styles.formContainer}>
             {errorMessage && (
@@ -131,16 +113,15 @@ export default function EnterEmailScreen() {
             )}
             
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Full name</Text>
               <TextInput
                 style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                textContentType="emailAddress"
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Your full name"
+                autoCapitalize="words"
+                autoComplete="name"
+                textContentType="name"
                 autoFocus
               />
             </View>
@@ -154,10 +135,6 @@ export default function EnterEmailScreen() {
             >
               Continue
             </Button>
-            
-            <Text style={styles.termsText}>
-              By continuing, you agree to our <Text style={styles.termsLink}>Terms of Service</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>
-            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -229,15 +206,5 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     marginBottom: spacing.lg,
-  },
-  termsText: {
-    fontSize: fontSizes.sm,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: spacing.md,
-  },
-  termsLink: {
-    color: colors.primary,
-    fontWeight: '500',
   },
 }); 
