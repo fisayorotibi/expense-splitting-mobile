@@ -3,10 +3,10 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ScrollView, 
   TouchableOpacity,
   ActivityIndicator,
-  RefreshControl 
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, fontSizes, borderRadius, shadows } from '../../utils/theme';
 import { ExpenseSplit, Settlement } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -156,6 +157,19 @@ export default function HomeScreen() {
   const formatCurrency = (amount: number) => {
     return `₦${(amount / 100).toFixed(2)}`;
   };
+  
+  const handleAddExpense = () => {
+    navigation.navigate('ExpenseStack', { 
+      screen: 'AddNewExpense',
+      params: {} // Add required params object
+    });
+  };
+
+  const handleNotificationsPress = () => {
+    // This would navigate to notifications
+    // But for now just show an alert since the screen doesn't exist
+    Alert.alert('Notifications', 'Notifications screen coming soon');
+  };
 
   if (loading && !refreshing) {
     return (
@@ -166,24 +180,17 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+    <ScreenHeader
+      title="Home"
+      useLargeTitle={true}
+      rightAction={{
+        icon: 'notifications-outline',
+        onPress: handleNotificationsPress
+      }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Home</Text>
-        {/* Connection status display */}
-        {connectionStatus && (
-          <View style={styles.connectionStatus}>
-            <Text style={styles.statusText}>{connectionStatus}</Text>
-          </View>
-        )}
-        {isLoading && <ActivityIndicator size="small" color="#0000ff" />}
-      </View>
-
       {/* Balance Summary */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Summary</Text>
@@ -217,28 +224,30 @@ export default function HomeScreen() {
             <Text style={styles.emptyStateText}>No pending settlements</Text>
           </View>
         ) : (
-          pendingSettlements.map(settlement => (
-            <View key={settlement.id} style={styles.settlementItem}>
+          pendingSettlements.slice(0, 3).map((settlement, index) => (
+            <TouchableOpacity 
+              key={settlement.id || index} 
+              style={styles.settlementItem}
+              onPress={() => navigation.navigate('SettleUp', { groupId: settlement.group_id })}
+            >
               <View style={styles.settlementDetail}>
                 <Text style={styles.settlementTitle}>
                   {settlement.from_user_id === user?.id 
-                    ? `You owe ${settlement.to_user?.full_name}`
-                    : `${settlement.from_user?.full_name} owes you`
+                    ? `You owe ${settlement.to_user?.full_name || 'someone'}`
+                    : `${settlement.from_user?.full_name || 'Someone'} owes you`
                   }
                 </Text>
                 <Text style={styles.settlementDate}>
                   {new Date(settlement.created_at).toLocaleDateString()}
                 </Text>
               </View>
-              <Text 
-                style={[
-                  styles.settlementAmount, 
-                  {color: settlement.from_user_id === user?.id ? colors.accent : colors.secondary}
-                ]}
-              >
+              <Text style={[
+                styles.settlementAmount,
+                { color: settlement.from_user_id === user?.id ? colors.accent : colors.secondary }
+              ]}>
                 {formatCurrency(settlement.amount)}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>
@@ -249,22 +258,21 @@ export default function HomeScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={[styles.actionButton, {backgroundColor: colors.primary}]}
-            onPress={() => navigation.navigate('ExpenseStack', { 
-              screen: 'AddNewExpense',
-              params: {} // Add required params object
-            })}
+            onPress={handleAddExpense}
           >
+            <Ionicons name="add" size={20} color={colors.white} style={styles.actionIcon} />
             <Text style={styles.actionButtonText}>Add Expense</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.actionButton, {backgroundColor: colors.secondary}]}
             onPress={() => navigation.navigate('GroupStack', { screen: 'CreateGroup' })}
           >
+            <Ionicons name="people" size={20} color={colors.white} style={styles.actionIcon} />
             <Text style={styles.actionButtonText}>Create Group</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+    </ScreenHeader>
   );
 }
 
@@ -378,23 +386,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     fontWeight: '600',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  title: {
-    fontSize: fontSizes.xl,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-  },
-  connectionStatus: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-  },
-  statusText: {
-    fontSize: 14,
+  actionIcon: {
+    marginRight: spacing.sm,
   },
 }); 

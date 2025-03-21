@@ -17,6 +17,7 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, fontSizes, borderRadius, shadows } from '../../utils/theme';
 import { Group } from '../../types';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 type GroupsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -122,26 +123,6 @@ export default function GroupsScreen() {
     </TouchableOpacity>
   );
 
-  const renderEmptyComponent = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons 
-        name="people-outline" 
-        size={64} 
-        color={colors.gray[400]} 
-      />
-      <Text style={styles.emptyText}>You don't have any groups yet</Text>
-      <Text style={styles.emptySubtext}>
-        Create a group to start splitting expenses with friends
-      </Text>
-      <TouchableOpacity
-        style={styles.createGroupButton}
-        onPress={navigateToCreateGroup}
-      >
-        <Text style={styles.createGroupButtonText}>Create a Group</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   if (loading && !refreshing && groups.length === 0) {
     return (
       <View style={styles.loadingContainer}>
@@ -151,27 +132,41 @@ export default function GroupsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={groups}
-        renderItem={renderGroupItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={renderEmptyComponent}
-      />
-      
-      {groups.length > 0 && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={navigateToCreateGroup}
-        >
-          <Ionicons name="add" size={24} color={colors.white} />
-        </TouchableOpacity>
+    <ScreenHeader
+      title="My Circles"
+      useLargeTitle={true}
+      rightAction={{
+        icon: 'add-outline',
+        onPress: navigateToCreateGroup
+      }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {groups.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons 
+            name="people-outline" 
+            size={64} 
+            color={colors.gray[400]} 
+          />
+          <Text style={styles.emptyText}>You don't have any groups yet</Text>
+          <Text style={styles.emptySubtext}>
+            Create a group to start splitting expenses with friends
+          </Text>
+          <TouchableOpacity
+            style={styles.createGroupButton}
+            onPress={navigateToCreateGroup}
+          >
+            <Text style={styles.createGroupButtonText}>Create a Group</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.groupsList}>
+          {groups.map(group => renderGroupItem({ item: group }))}
+        </View>
       )}
-    </View>
+    </ScreenHeader>
   );
 }
 
@@ -271,5 +266,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
+  },
+  groupsList: {
+    flex: 1,
   },
 }); 

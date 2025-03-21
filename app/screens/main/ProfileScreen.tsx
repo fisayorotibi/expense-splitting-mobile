@@ -15,6 +15,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, fontSizes, borderRadius, shadows } from '../../utils/theme';
 import { Button } from '../../components/Button';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -81,7 +82,14 @@ export default function ProfileScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScreenHeader
+      title="Profile"
+      useLargeTitle={true}
+      rightAction={{
+        icon: 'cog-outline',
+        onPress: navigateToSettings
+      }}
+    >
       {/* Profile Header */}
       <View style={styles.profileHeader}>
         {profile?.avatar_url ? (
@@ -143,7 +151,7 @@ export default function ProfileScreen() {
       >
         Sign Out
       </Button>
-    </ScrollView>
+    </ScreenHeader>
   );
 }
 

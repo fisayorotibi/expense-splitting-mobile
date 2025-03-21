@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -15,6 +16,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, fontSizes, borderRadius, shadows } from '../../utils/theme';
 import { Group, Expense, Settlement, Notification } from '../../types';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 type ActivityScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -225,27 +227,32 @@ export default function ActivityScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={activities}
-        renderItem={renderActivityItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-outline" size={64} color={colors.gray[400]} />
-            <Text style={styles.emptyText}>No activity yet</Text>
-            <Text style={styles.emptySubtext}>
-              When you have new expenses, settlements, or notifications, 
-              they will appear here.
-            </Text>
-          </View>
-        )}
-      />
-    </View>
+    <ScreenHeader
+      title="Activity"
+      useLargeTitle={true}
+      rightAction={{
+        icon: 'filter-outline',
+        onPress: () => Alert.alert('Filter', 'Filter functionality coming soon')
+      }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {activities.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="notifications-outline" size={64} color={colors.gray[400]} />
+          <Text style={styles.emptyText}>No activity yet</Text>
+          <Text style={styles.emptySubtext}>
+            When you have new expenses, settlements, or notifications, 
+            they will appear here.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.listContainer}>
+          {activities.map(item => renderActivityItem({ item }))}
+        </View>
+      )}
+    </ScreenHeader>
   );
 }
 
@@ -330,5 +337,8 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
+  },
+  listContainer: {
+    flex: 1,
   },
 }); 
