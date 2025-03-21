@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user ID:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -62,14 +63,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
 
       if (error) {
-        throw error;
-      }
-
-      if (data) {
+        console.log('Profile fetch error:', error.message);
+        
+        // If profile doesn't exist, create one using user metadata
+        if (error.code === 'PGRST116') { // No rows returned
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user) {
+            console.log('Creating missing profile for user:', userId);
+            
+            // Create profile without returning option
+            const { error: createError } = await supabase
+              .from('profiles')
+              .upsert({
+                id: userId,
+                email: userData.user.email || '',
+                full_name: userData.user.user_metadata?.full_name || '',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
+            
+            if (createError) {
+              console.error('Error creating missing profile:', createError);
+            } else {
+              console.log('Missing profile created successfully');
+              // Fetch the newly created profile
+              const { data: newProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+                
+              if (newProfile) {
+                setProfile(newProfile as AppUser);
+              }
+            }
+          } else {
+            console.error('No user data available to create profile');
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      } else if (data) {
+        console.log('Profile found:', data.id);
         setProfile(data as AppUser);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error in fetchProfile:', error);
     } finally {
       setLoading(false);
     }

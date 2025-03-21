@@ -70,6 +70,9 @@ export default function ConfirmPasswordScreen() {
         }
       });
       
+      // Track the user ID from successful signup or login
+      let userId = signUpData?.user?.id;
+      
       if (signUpError) {
         console.error('Error during signup:', signUpError);
         
@@ -89,7 +92,8 @@ export default function ConfirmPasswordScreen() {
         
         // Successful sign in! Update profile and continue
         if (signInData.user) {
-          console.log('Signed in successfully, updating profile');
+          userId = signInData.user.id;
+          console.log('Signed in successfully, user ID:', userId);
           
           // Update profile with display name
           try {
@@ -102,15 +106,13 @@ export default function ConfirmPasswordScreen() {
         }
       } else {
         // Signup successful - now explicitly create/update profile
-        console.log('Successfully created account, now creating profile');
+        console.log('Successfully created account, user ID:', userId);
       }
       
-      // Create profile record - try both with authenticated session and direct DB insert
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        
-        if (userId) {
+      // Create profile record using userId we got from signup or login
+      if (userId) {
+        try {
+          console.log('Creating profile for user ID:', userId);
           // Create/update profile record
           const { error: profileError } = await supabase.from('profiles').upsert({
             id: userId,
@@ -125,11 +127,31 @@ export default function ConfirmPasswordScreen() {
           } else {
             console.log('Profile created successfully');
           }
-        } else {
-          console.error('No user ID available for profile creation');
+        } catch (profileError) {
+          console.error('Error creating profile:', profileError);
         }
-      } catch (profileError) {
-        console.error('Error creating profile:', profileError);
+      } else {
+        console.error('No user ID available for profile creation');
+        
+        // Try one more approach - directly create profile after getting session
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const sessionUserId = sessionData?.session?.user?.id;
+          
+          if (sessionUserId) {
+            console.log('Found user ID from session:', sessionUserId);
+            await supabase.from('profiles').upsert({
+              id: sessionUserId,
+              email,
+              full_name: fullName,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' });
+            console.log('Profile created from session user ID');
+          }
+        } catch (fallbackError) {
+          console.error('Fallback profile creation failed:', fallbackError);
+        }
       }
       
       // Mark that user has an account
