@@ -55,15 +55,54 @@ export default function EnterEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // Navigate to verify email screen first
+      // First navigate to verify email screen - don't wait for API calls to complete
       navigation.navigate('VerifyEmail', { email });
       
-      // Send the verification code
+      // Check if email is already registered
+      try {
+        // Try to send a verification code directly first - this works for existing emails
+        const { error: existingEmailError } = await resendCode(email);
+        
+        if (!existingEmailError) {
+          console.log('Email already exists, sent verification code directly');
+          await markUserHasAccount();
+          setLoading(false);
+          return;
+        }
+      } catch (resendError) {
+        console.log('Initial resend attempt failed, continuing with signup');
+      }
+      
+      // If we get here, email may not exist - try creating a temporary account
+      // Create a temporary password - user will set their real password later
+      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}${Math.random().toString(10).slice(-2)}!`;
+      
+      // Create the temporary user account
+      console.log('Creating temporary account for email:', email);
+      const { error, userId } = await signUp(email, tempPassword, '');
+      
+      if (error) {
+        // Handle different error cases
+        if (error.message?.includes('already registered')) {
+          console.log('Email already registered, sending verification code');
+          await resendCode(email);
+          await markUserHasAccount();
+          return;
+        }
+        
+        // If we get here, there was an unexpected error
+        console.error('Error creating temporary account:', error.message);
+        return;
+      }
+      
+      // New account was created successfully
+      console.log('Created temporary account for:', email, 'User ID:', userId);
+      await markUserHasAccount();
+      
+      // Send the verification code for the new account
       const { error: resendError } = await resendCode(email);
       
       if (resendError) {
-        // If we can't send a verification code, log the error but don't halt the flow
-        // The user can request another code from the verify screen
         console.error('Error sending verification code:', resendError.message);
       }
     } catch (error) {
