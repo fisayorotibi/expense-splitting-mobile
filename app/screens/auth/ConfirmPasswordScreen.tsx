@@ -56,11 +56,11 @@ export default function ConfirmPasswordScreen() {
     setErrorMessage(null);
 
     try {
-      // First make sure there are no active sessions
+      // First sign out to ensure we're starting with a clean state
       await supabase.auth.signOut();
       
-      // Directly create the account with the correct password and user data
-      const { data, error } = await supabase.auth.signUp({
+      // Create a new account directly with the provided credentials
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -70,72 +70,79 @@ export default function ConfirmPasswordScreen() {
         }
       });
       
-      if (error) {
-        console.error('Error creating account:', error);
+      if (signUpError) {
+        console.error('Error during signup:', signUpError);
         
-        // If it's already registered, try to sign in instead
-        if (error.message?.includes('already registered')) {
+        // Try sign in instead - user might already exist from previous verification
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInError) {
+          console.error('Error signing in after signup attempt:', signInError);
+          setErrorMessage('Login failed. Please try manually logging in on the login screen.');
+          await markUserHasAccount();
+          navigation.navigate('Congratulations', { email });
+          return;
+        }
+        
+        // Successful sign in! Update profile and continue
+        if (signInData.user) {
+          console.log('Signed in successfully, updating profile');
+          
+          // Update profile with display name
           try {
-            // Account already exists, try signing in with the provided credentials
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email,
-              password
+            await supabase.auth.updateUser({
+              data: { full_name: fullName }
             });
-            
-            if (signInError) {
-              console.error('Error signing in:', signInError);
-              setErrorMessage('Could not sign in with the provided credentials. Please try logging in from the login screen.');
-              return;
-            }
-            
-            // If sign-in works, update the user data
-            if (signInData?.user) {
-              // Update the user metadata
-              await supabase.auth.updateUser({
-                data: {
-                  full_name: fullName
-                }
-              });
-              
-              // Create or update profile
-              await supabase.from('profiles').upsert({
-                id: signInData.user.id,
-                email,
-                full_name: fullName,
-                updated_at: new Date().toISOString()
-              });
-            }
-          } catch (signInError) {
-            console.error('Error in sign-in attempt:', signInError);
-            setErrorMessage('Failed to sign in with the provided credentials.');
-            return;
+          } catch (updateError) {
+            console.error('Failed to update user metadata:', updateError);
+          }
+        }
+      } else {
+        // Signup successful - now explicitly create/update profile
+        console.log('Successfully created account, now creating profile');
+      }
+      
+      // Create profile record - try both with authenticated session and direct DB insert
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        
+        if (userId) {
+          // Create/update profile record
+          const { error: profileError } = await supabase.from('profiles').upsert({
+            id: userId,
+            email,
+            full_name: fullName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+          
+          if (profileError) {
+            console.error('Error creating profile record:', profileError);
+          } else {
+            console.log('Profile created successfully');
           }
         } else {
-          // Other error, show message but continue
-          setErrorMessage(`Account creation issue: ${error.message}`);
+          console.error('No user ID available for profile creation');
         }
-      } else if (data?.user) {
-        // Successfully created account, ensure profile is created
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+      } catch (profileError) {
+        console.error('Error creating profile:', profileError);
       }
       
       // Mark that user has an account
       await markUserHasAccount();
       
-      // Sign out to ensure a clean slate
+      // Sign out to ensure clean state (the user will sign in properly after)
       await supabase.auth.signOut();
       
-      // Navigate to success screen
+      // Show success screen
       navigation.navigate('Congratulations', { email });
     } catch (error) {
       console.error('Error in handleCreateAccount:', error);
-      setErrorMessage('An unexpected error occurred. Please try again.');
+      setErrorMessage('An unexpected error occurred. Please try the login screen.');
     } finally {
       setLoading(false);
     }
