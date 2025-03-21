@@ -95,6 +95,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
+      console.log(`Attempting to sign up user with email: ${email}, fullName: ${fullName}`);
+      
       // Create the auth user with Supabase
       const { data, error } = await supabase.auth.signUp({ 
         email, 
@@ -109,26 +111,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
 
-      // If user creation is successful, create a profile entry
-      if (!error && data.user) {
-        // Create the profile with all relevant user data
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          return { error: profileError, userId: data.user.id };
-        }
+      if (error) {
+        console.error('Error during sign up:', error.message);
+        return { error };
       }
 
-      return { error, userId: data?.user?.id };
+      console.log('Sign up successful, user ID:', data?.user?.id);
+
+      // If user creation is successful, create a profile entry
+      if (data?.user) {
+        try {
+          console.log('Creating profile for user:', data.user.id);
+          // Create the profile with all relevant user data
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            email,
+            full_name: fullName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+          if (profileError) {
+            console.error('Profile creation error:', profileError.message);
+            // Don't fail the signup even if profile creation fails
+            // We'll try to create it again later
+          } else {
+            console.log('Profile created successfully');
+          }
+        } catch (profileErr) {
+          console.error('Exception during profile creation:', profileErr);
+        }
+      } else {
+        console.warn('User was null after sign up');
+      }
+
+      return { error: null, userId: data?.user?.id };
     } catch (error) {
-      console.error('Error in signUp:', error);
+      console.error('Exception in signUp:', error);
       return { error };
     }
   };

@@ -7,9 +7,9 @@ import {
   StatusBar,
   Image
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList, RootStackParamList } from '../../navigation/types';
+import { AuthStackParamList } from '../../navigation/types';
 import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/Button';
@@ -18,19 +18,17 @@ type CongratulationsScreenNavigationProp = StackNavigationProp<AuthStackParamLis
 type CongratulationsScreenRouteProp = RouteProp<AuthStackParamList, 'Congratulations'>;
 
 export default function CongratulationsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<CongratulationsScreenNavigationProp>();
   const route = useRoute<CongratulationsScreenRouteProp>();
   
   const { email } = route.params;
 
   const handleContinue = () => {
-    // Use CommonActions to reset to the root navigator
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      })
-    );
+    // Navigate to main app
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }], // This will redirect to login, but if you have auto-login after signup, you can navigate to the main app directly
+    });
   };
 
   return (
@@ -44,12 +42,25 @@ export default function CongratulationsScreen() {
         
         <Text style={styles.title}>Welcome to Expense Splitter!</Text>
         <Text style={styles.subtitle}>
-          Your account has been created successfully. You're all set to start tracking and splitting expenses with friends.
+          Your account has been created successfully. You're now ready to log in with your email and password.
         </Text>
         
         <Text style={styles.emailInfo}>
-          Signed in as <Text style={styles.emailHighlight}>{email}</Text>
+          Your account: <Text style={styles.emailHighlight}>{email}</Text>
         </Text>
+        
+        <View style={styles.loginInstructions}>
+          <Text style={styles.instructionTitle}>What's Next?</Text>
+          <Text style={styles.instructionText}>
+            1. Click "Log In Now" below
+          </Text>
+          <Text style={styles.instructionText}>
+            2. Enter your email and the password you just created
+          </Text>
+          <Text style={styles.instructionText}>
+            3. Start using Expense Splitter!
+          </Text>
+        </View>
         
         <View style={styles.features}>
           <View style={styles.feature}>
@@ -85,7 +96,7 @@ export default function CongratulationsScreen() {
           variant="primary"
           style={styles.continueButton}
         >
-          Get Started
+          Log In Now
         </Button>
       </View>
     </SafeAreaView>
@@ -136,6 +147,21 @@ const styles = StyleSheet.create({
   emailHighlight: {
     fontWeight: 'bold',
     color: colors.text.primary,
+  },
+  loginInstructions: {
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
+  instructionTitle: {
+    fontSize: fontSizes.md,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  instructionText: {
+    fontSize: fontSizes.sm,
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
   features: {
     width: '100%',
