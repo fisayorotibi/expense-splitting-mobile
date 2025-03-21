@@ -54,20 +54,11 @@ export default function CreateAccountScreen() {
     setErrorMessage(null);
 
     try {
-      // Try to update the user metadata with the name, but continue even if it fails
-      // This is a best-effort update, as the main update will happen in the SetPassword screen
-      try {
-        const { data } = await supabase.auth.getUser();
-        if (data?.user) {
-          await supabase.auth.updateUser({
-            data: { full_name: fullName.trim() }
-          });
-        }
-      } catch (updateError) {
-        // Just log the error and continue - this is not critical
-        console.error('Could not update user metadata:', updateError);
-      }
-
+      console.log('Display name collected:', fullName.trim());
+      
+      // Store the name in local state but don't update the Supabase user yet
+      // We'll update both name and password together during the final step
+      
       // Navigate to password setup
       navigation.navigate('SetPassword', { 
         email,

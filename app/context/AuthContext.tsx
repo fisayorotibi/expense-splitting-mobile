@@ -202,18 +202,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const verifySignUpCode = async (email: string, code: string): Promise<{ error: any | null; success?: boolean }> => {
     try {
+      console.log('Verifying signup code for email:', email);
       const { success, error } = await verifyCode(email, code);
       
       if (error) {
+        console.error('Code verification error:', error.message);
         return { error, success: false };
       }
       
+      console.log('Code verified successfully');
+      
       try {
-        // Always sign out first to prevent automatic login
+        // Always sign out immediately after verification
+        // This prevents automatic login and allows us to collect display name and password
         await supabase.auth.signOut();
+        console.log('Signed out after verification to prepare for display name collection');
         
-        // No need to create a profile here - that will be done in the final step
-        // Just indicate success so we can proceed to collect name and password
+        // Don't create any profiles here - we'll do that after collecting display name and password
         return { error: null, success: true };
       } catch (innerError) {
         console.error('Error during post-verification process:', innerError);

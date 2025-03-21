@@ -121,7 +121,7 @@ export default function VerifyEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // First attempt to verify the code - this also signs out in AuthContext
+      // Verify the code but don't create any profile yet
       const { error, success } = await verifySignUpCode(email, verificationCode);
 
       if (error) {
@@ -130,12 +130,15 @@ export default function VerifyEmailScreen() {
         return;
       }
 
-      // Wait to ensure auth state is cleared
+      // Successful verification - immediately navigate to display name collection
+      console.log('Email verified successfully, moving to display name collection');
+      
+      // Add a small delay to ensure any auth state changes are processed
       setTimeout(() => {
-        // After successful verification, navigate to the account creation screen
+        // Navigate to CreateAccountScreen to collect the display name
         navigation.navigate('CreateAccount', { email });
         setLoading(false);
-      }, 500); 
+      }, 500);
     } catch (error) {
       console.error('Error verifying code:', error);
       setErrorMessage('An error occurred. Please try again.');
