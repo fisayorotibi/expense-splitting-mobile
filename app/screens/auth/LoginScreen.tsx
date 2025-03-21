@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
@@ -19,15 +19,28 @@ import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
 import { Button } from '../../components/Button';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const route = useRoute<LoginScreenRouteProp>();
   const { signIn } = useAuth();
+
+  // Check for parameters passed from the registration flow
+  useEffect(() => {
+    if (route.params?.email) {
+      setEmail(route.params.email);
+    }
+    if (route.params?.message) {
+      setSuccessMessage(route.params.message);
+    }
+  }, [route.params]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -37,6 +50,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
       const { error } = await signIn(email, password);
@@ -73,6 +87,12 @@ export default function LoginScreen() {
           {errorMessage && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
+          
+          {successMessage && (
+            <View style={styles.successContainer}>
+              <Text style={styles.successText}>{successMessage}</Text>
             </View>
           )}
 
@@ -117,7 +137,7 @@ export default function LoginScreen() {
 
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <TouchableOpacity onPress={() => navigation.navigate('EnterEmail')}>
               <Text style={styles.registerLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
@@ -168,6 +188,16 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.danger,
+    fontSize: fontSizes.sm,
+  },
+  successContainer: {
+    backgroundColor: '#d4edda',  // light green
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
+  },
+  successText: {
+    color: '#28a745',  // green
     fontSize: fontSizes.sm,
   },
   inputContainer: {

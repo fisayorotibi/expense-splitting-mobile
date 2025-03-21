@@ -5,11 +5,16 @@ export type AuthStackParamList = {
   Onboarding1: undefined;
   Onboarding2: undefined;
   Onboarding3: undefined;
-  Login: undefined;
-  Register: undefined;
+  Login: { email?: string; message?: string };
   ForgotPassword: undefined;
   AuthCallback: { url?: string; code?: string };
   VerifyCode: { email: string; userId?: string };
+  EnterEmail: undefined;
+  VerifyEmail: { email: string };
+  CreateAccount: { email: string };
+  SetPassword: { email: string; fullName: string };
+  ConfirmPassword: { email: string; fullName: string; password: string };
+  Congratulations: { email: string };
 };
 
 export type MainTabParamList = {

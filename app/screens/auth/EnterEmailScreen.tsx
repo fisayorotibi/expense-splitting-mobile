@@ -55,41 +55,15 @@ export default function EnterEmailScreen() {
     setErrorMessage(null);
 
     try {
-      // First navigate to verify email screen - don't wait for API calls to complete
+      // Navigate to verify email screen first
       navigation.navigate('VerifyEmail', { email });
-      
-      // Create a temporary password - user will set their real password later
-      // Make it strong enough to pass validation
-      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}${Math.random().toString(10).slice(-2)}!`;
-      
-      // Then do the account creation and verification code sending in the background
-      // Try to create the user account with a blank name - they'll set this later
-      const { error, userId } = await signUp(email, tempPassword, '');
-      
-      if (error) {
-        // Handle different error cases
-        if (error.message?.includes('already registered')) {
-          console.log('Email already exists, sending verification code');
-          // Email already exists - try to send verification code
-          await resendCode(email);
-          // Mark that this user has an account (even if it's not verified yet)
-          await markUserHasAccount();
-          return;
-        }
-        
-        // If we get here, there was an error but we've already navigated away
-        console.error('Error creating account:', error.message);
-        return;
-      }
-      
-      // New account was created successfully
-      console.log('Created temporary account for:', email);
-      await markUserHasAccount();
       
       // Send the verification code
       const { error: resendError } = await resendCode(email);
       
       if (resendError) {
+        // If we can't send a verification code, log the error but don't halt the flow
+        // The user can request another code from the verify screen
         console.error('Error sending verification code:', resendError.message);
       }
     } catch (error) {

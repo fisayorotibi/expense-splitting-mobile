@@ -24,10 +24,16 @@ export default function CongratulationsScreen() {
   const { email } = route.params;
 
   const handleContinue = () => {
-    // Navigate to main app
+    // Navigate to login screen with the email pre-filled
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }], // This will redirect to login, but if you have auto-login after signup, you can navigate to the main app directly
+      routes: [{ 
+        name: 'Login',
+        params: { 
+          email, 
+          message: 'Your account has been created successfully. You can now log in with your email and password.'
+        } 
+      }],
     });
   };
 
@@ -42,25 +48,12 @@ export default function CongratulationsScreen() {
         
         <Text style={styles.title}>Welcome to Expense Splitter!</Text>
         <Text style={styles.subtitle}>
-          Your account has been created successfully. You're now ready to log in with your email and password.
+          Your account has been created successfully. You're all set to start tracking and splitting expenses with friends.
         </Text>
         
         <Text style={styles.emailInfo}>
-          Your account: <Text style={styles.emailHighlight}>{email}</Text>
+          Signed in as <Text style={styles.emailHighlight}>{email}</Text>
         </Text>
-        
-        <View style={styles.loginInstructions}>
-          <Text style={styles.instructionTitle}>What's Next?</Text>
-          <Text style={styles.instructionText}>
-            1. Click "Log In Now" below
-          </Text>
-          <Text style={styles.instructionText}>
-            2. Enter your email and the password you just created
-          </Text>
-          <Text style={styles.instructionText}>
-            3. Start using Expense Splitter!
-          </Text>
-        </View>
         
         <View style={styles.features}>
           <View style={styles.feature}>
@@ -96,7 +89,7 @@ export default function CongratulationsScreen() {
           variant="primary"
           style={styles.continueButton}
         >
-          Log In Now
+          Get Started
         </Button>
       </View>
     </SafeAreaView>
@@ -147,21 +140,6 @@ const styles = StyleSheet.create({
   emailHighlight: {
     fontWeight: 'bold',
     color: colors.text.primary,
-  },
-  loginInstructions: {
-    marginBottom: spacing.xl,
-    textAlign: 'center',
-  },
-  instructionTitle: {
-    fontSize: fontSizes.md,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  instructionText: {
-    fontSize: fontSizes.sm,
-    color: colors.text.secondary,
-    lineHeight: 20,
   },
   features: {
     width: '100%',

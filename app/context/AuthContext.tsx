@@ -95,102 +95,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      console.log(`Attempting to sign up user with email: ${email}, fullName: ${fullName}`);
+      // First check if there's any existing session and sign out
+      await supabase.auth.signOut();
       
       // Create the auth user with Supabase
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          // Disable auto-confirmation email with link
-          emailRedirectTo: undefined,
+          // Store full name in user metadata
           data: {
-            // Store full name in user metadata
             full_name: fullName,
           }
         }
       });
 
-      if (error) {
-        console.error('Error during sign up:', error.message);
-        return { error };
-      }
-
-      console.log('Sign up successful, user ID:', data?.user?.id);
-
       // If user creation is successful, create a profile entry
-      if (data?.user) {
-        try {
-          console.log('Creating profile for user:', data.user.id);
-          // Create the profile with all relevant user data
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: data.user.id,
-            email,
-            full_name: fullName,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
+      if (!error && data.user) {
+        // Create the profile with all relevant user data
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
 
-          if (profileError) {
-            console.error('Profile creation error:', profileError.message);
-            // Don't fail the signup even if profile creation fails
-            // We'll try to create it again later
-          } else {
-            console.log('Profile created successfully');
-          }
-        } catch (profileErr) {
-          console.error('Exception during profile creation:', profileErr);
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          return { error: profileError, userId: data.user.id };
         }
-      } else {
-        console.warn('User was null after sign up');
       }
 
-      return { error: null, userId: data?.user?.id };
+      return { error, userId: data?.user?.id };
     } catch (error) {
-      console.error('Exception in signUp:', error);
+      console.error('Error in signUp:', error);
       return { error };
     }
   };
 
   const verifySignUpCode = async (email: string, code: string): Promise<{ error: any | null; success?: boolean }> => {
     try {
+      // Verify the email code with Supabase
       const { success, error } = await verifyCode(email, code);
       
       if (error) {
         return { error, success: false };
       }
       
+      // Always sign out to ensure a clean state
       try {
-        // Always sign out first to prevent automatic login
         await supabase.auth.signOut();
-        
-        // Get the current user after verification
-        const { data } = await supabase.auth.getUser();
-        
-        // If somehow we still have a user, attempt to create profile
-        // but don't worry if this fails - we'll create it later
-        if (data?.user) {
-          try {
-            await supabase.from('profiles').insert({
-              id: data.user.id,
-              email: email,
-              full_name: data.user.user_metadata?.full_name || '',
-              created_at: new Date().toISOString(),
-            });
-            
-            // Sign out again to be extra sure
-            await supabase.auth.signOut();
-          } catch (profileError) {
-            console.error('Error creating profile after verification:', profileError);
-            // Don't return error - we'll still continue the flow
-          }
-        }
-        
-        return { error: null, success: true };
-      } catch (innerError) {
-        console.error('Error during post-verification process:', innerError);
-        return { error: innerError, success: false };
+      } catch (signOutError) {
+        console.log('Sign out after verification error (can be ignored):', signOutError);
       }
+      
+      // Return success - we'll create the actual account in the ConfirmPasswordScreen
+      return { error: null, success: true };
     } catch (error) {
       console.error('Error in verifySignUpCode:', error);
       return { error, success: false };
