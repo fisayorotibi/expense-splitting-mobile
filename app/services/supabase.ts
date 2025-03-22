@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
+import { ssrCompatibleStorage } from './ssr-storage-polyfill';
+
+// Use platform-specific storage based on environment
+const storage = typeof window !== 'undefined' ? AsyncStorage : ssrCompatibleStorage;
 
 // Auth configuration
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://xwjajxlbjwmkzzbtftse.supabase.co';
@@ -19,10 +23,10 @@ const getAuthRedirectUrl = () => {
   return Linking.createURL('auth/callback');
 };
 
-// Create Supabase client
+// Create Supabase client with SSR-compatible storage
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: storage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true, // Important for email confirmation links
@@ -32,13 +36,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Configure the auth settings programmatically
 export const configurePKCE = () => {
-  // Log the redirect URL for debugging
-  const redirectUrl = getAuthRedirectUrl();
-  console.log('Auth redirect URL:', redirectUrl);
+  // Check if we're in a browser environment before logging
+  if (typeof window !== 'undefined') {
+    // Log the redirect URL for debugging
+    const redirectUrl = getAuthRedirectUrl();
+    console.log('Auth redirect URL:', redirectUrl);
+  }
   
   // For Supabase auth, you need to set the redirect URL in the Supabase Dashboard
   // under Authentication > URL Configuration > Redirect URLs
 };
+
+// Initialize auth configuration only if in a browser environment
+if (typeof window !== 'undefined') {
+  configurePKCE();
+}
 
 /**
  * IMPORTANT: Supabase Auth Setup Instructions
@@ -61,9 +73,6 @@ export const configurePKCE = () => {
  *    - For password reset, use:
  *      {{ .SiteURL }}/auth/v1/verify?token={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}
  */
-
-// Initialize auth configuration
-configurePKCE();
 
 /**
  * IMPORTANT: Configure Supabase Auth Redirect URLs

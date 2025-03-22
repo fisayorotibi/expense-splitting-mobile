@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -58,6 +59,11 @@ export default function ForgotPasswordScreen() {
     }
   };
 
+  // Function to dismiss keyboard when necessary
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -104,9 +110,14 @@ export default function ForgotPasswordScreen() {
               editable={!successMessage}
             />
           </View>
+        </View>
 
+        <View style={styles.bottomContainer}>
           <Button
-            onPress={handleResetPassword}
+            onPress={() => {
+              dismissKeyboard();
+              handleResetPassword();
+            }}
             loading={loading}
             fullWidth
             style={styles.resetButton}
@@ -117,7 +128,10 @@ export default function ForgotPasswordScreen() {
 
           {successMessage && (
             <Button
-              onPress={() => navigation.navigate('Login')}
+              onPress={() => {
+                dismissKeyboard();
+                navigation.navigate('Login');
+              }}
               variant="outline"
               fullWidth
               style={styles.backToLoginButton}
@@ -141,6 +155,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxxl,
     paddingBottom: spacing.xl,
+    justifyContent: 'space-between',
   },
   backButton: {
     marginBottom: spacing.lg,
@@ -206,5 +221,10 @@ const styles = StyleSheet.create({
   },
   backToLoginButton: {
     marginTop: spacing.md,
+  },
+  bottomContainer: {
+    width: '100%',
+    marginTop: 'auto',
+    paddingTop: spacing.xl,
   },
 }); 

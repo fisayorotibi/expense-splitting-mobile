@@ -1,0 +1,103 @@
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#root {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+#phone-container {
+  position: relative;
+  width: 390px;
+  height: 844px; /* iPhone 13 Pro dimensions */
+  background-color: white;
+  border-radius: 44px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  border: 14px solid #1a1a1c;
+  display: flex;
+  flex-direction: column;
+}
+
+#notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 30px;
+  background-color: #1a1a1c;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  z-index: 10;
+}
+
+#app-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+@media screen and (max-width: 430px) {
+  #phone-container {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+  
+  #notch {
+    display: none;
+  }
+}
+
+/* Status bar styling */
+#status-bar {
+  height: 44px;
+  width: 100%;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 22px;
+  box-sizing: border-box;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 5;
+}
+
+.status-bar-time {
+  margin-left: 16px;
+}
+
+.status-bar-icons {
+  display: flex;
+  align-items: center;
+}
+
+.status-bar-icon {
+  margin-left: 6px;
+}
+
+/* Home bar at bottom of iPhone */
+#home-bar {
+  height: 5px;
+  width: 140px;
+  background-color: #000;
+  border-radius: 3px;
+  margin: 8px auto;
+} 

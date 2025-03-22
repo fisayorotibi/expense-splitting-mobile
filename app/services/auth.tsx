@@ -23,8 +23,8 @@ const createProfile = async (userId: string, email: string, fullName?: string) =
   }
 };
 
-// Export the signUp function so it can be used by other modules
-export const signUp = async (email: string, password: string, fullName?: string): Promise<{ success: boolean; error: Error | null; userId?: string }> => {
+// In the signUp function, add profile creation after successful signup
+const signUp = async (email: string, password: string, fullName?: string): Promise<{ success: boolean; error: Error | null; userId?: string }> => {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,

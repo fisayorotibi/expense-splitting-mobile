@@ -1,26 +1,99 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
   SafeAreaView,
-  Dimensions
+  Dimensions,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { checkForExistingAccount, resetAccountStatus } from '../../utils/accountUtils';
+import { supabase } from '../../services/supabase';
 
 type SplashScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Splash'>;
 
 export default function SplashScreen() {
   const navigation = useNavigation<SplashScreenNavigationProp>();
+  const [checking, setChecking] = useState(true);
+  const [hasAccount, setHasAccount] = useState(false);
+
+  useEffect(() => {
+    const checkAccount = async () => {
+      try {
+        // First check for an existing session - if we have one but no user data,
+        // this might be a deleted account situation
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // We have a session, check if the user profile exists
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (error || !profile) {
+            // User has a session but profile doesn't exist - likely a deleted account
+            console.log('User session exists but profile missing - handling deleted account');
+            await supabase.auth.signOut(); // Sign out the deleted account
+            await resetAccountStatus(); // Reset the account status
+            setHasAccount(false);
+            setChecking(false);
+            return;
+          }
+        }
+        
+        // Normal flow - check if account exists
+        const exists = await checkForExistingAccount();
+        setHasAccount(exists);
+      } catch (error) {
+        console.error('Error checking account:', error);
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkAccount();
+  }, []);
+
+  useEffect(() => {
+    // Only navigate if we've finished checking
+    if (!checking) {
+      // If the user has an account, navigate to Login
+      // Otherwise, navigate to onboarding
+      if (hasAccount) {
+        navigation.replace('Login');
+      }
+      // We don't automatically navigate to onboarding, we let the user click the button
+    }
+  }, [checking, hasAccount, navigation]);
 
   const handleGetStarted = () => {
     navigation.navigate('Onboarding1');
   };
+
+  if (checking) {
+    // Show loading while checking account status
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <View style={styles.logoContainer}>
+          <Ionicons name="wallet-outline" size={80} color={colors.primary} />
+          <Text style={styles.appName}>SplitNaira</Text>
+        </View>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  // If the user has an account, the useEffect will navigate to Login
+  // So we only need to return the splash content if they don't have an account
 
   return (
     <SafeAreaView style={styles.container}>
@@ -67,6 +140,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xl,
   },
   contentContainer: {
     flex: 1,

@@ -8,6 +8,7 @@ import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import { RootStackParamList } from './app/navigation/types';
 import { setupAuthURLListener } from './app/services/auth';
+import { navigationTheme } from './app/utils/navigationTheme';
 
 export default function App() {
   // Handle deep links for auth flow
@@ -35,6 +36,7 @@ export default function App() {
             Register: 'register',
             ForgotPassword: 'forgot-password',
             AuthCallback: 'callback',
+            VerifyCode: 'verify'
           }
         },
         Main: {
@@ -45,6 +47,25 @@ export default function App() {
             Settle: 'settle',
             Profile: 'profile',
           }
+        },
+        GroupStack: {
+          path: 'groups',
+          screens: {
+            GroupsList: 'list',
+            GroupDetails: 'details/:groupId',
+            CreateGroup: 'create',
+            EditGroup: 'edit/:groupId',
+            GroupMembers: 'members/:groupId',
+            InviteMember: 'invite/:groupId'
+          }
+        },
+        ExpenseStack: {
+          path: 'expenses',
+          screens: {
+            AddNewExpense: 'add/:groupId?',
+            ExpenseDetails: 'details/:expenseId',
+            EditExpense: 'edit/:expenseId'
+          }
         }
       }
     }
@@ -52,9 +73,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <AuthProvider>
-        <NavigationContainer linking={linking}>
+        <NavigationContainer theme={navigationTheme} linking={linking}>
           <RootNavigator />
         </NavigationContainer>
       </AuthProvider>

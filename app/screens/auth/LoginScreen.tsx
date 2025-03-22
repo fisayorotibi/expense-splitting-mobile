@@ -10,37 +10,57 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Keyboard,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
 import { Button } from '../../components/Button';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Function to clear all signup data
+const clearAllSignupData = async () => {
+  try {
+    // Clear all form data from signup flow
+    await AsyncStorage.removeItem('signup_email');
+    await AsyncStorage.removeItem('signup_firstName');
+    await AsyncStorage.removeItem('signup_lastName');
+    await AsyncStorage.removeItem('signup_fullName');
+    await AsyncStorage.removeItem('signup_password');
+    await AsyncStorage.removeItem('signup_confirmPassword');
+    await AsyncStorage.removeItem('signup_session_id');
+    await AsyncStorage.removeItem('auth_last_screen');
+    
+    // Clear verification codes for all emails
+    const allKeys = await AsyncStorage.getAllKeys();
+    const verificationCodeKeys = allKeys.filter(key => key.startsWith('verification_code_'));
+    if (verificationCodeKeys.length > 0) {
+      await AsyncStorage.multiRemove(verificationCodeKeys);
+    }
+    
+    console.log('All signup data cleared from login screen');
+  } catch (error) {
+    console.error('Error clearing signup data:', error);
+  }
+};
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
-type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const route = useRoute<LoginScreenRouteProp>();
   const { signIn } = useAuth();
-
-  // Check for parameters passed from the registration flow
+  
+  // Clear signup data when login screen mounts (user exited signup flow)
   useEffect(() => {
-    if (route.params?.email) {
-      setEmail(route.params.email);
-    }
-    if (route.params?.message) {
-      setSuccessMessage(route.params.message);
-    }
-  }, [route.params]);
+    clearAllSignupData();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -50,7 +70,6 @@ export default function LoginScreen() {
 
     setLoading(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const { error } = await signIn(email, password);
@@ -62,6 +81,11 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to dismiss keyboard when necessary
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
   };
 
   return (
@@ -87,12 +111,6 @@ export default function LoginScreen() {
           {errorMessage && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{errorMessage}</Text>
-            </View>
-          )}
-          
-          {successMessage && (
-            <View style={styles.successContainer}>
-              <Text style={styles.successText}>{successMessage}</Text>
             </View>
           )}
 
@@ -125,9 +143,14 @@ export default function LoginScreen() {
           >
             <Text style={styles.forgotPasswordText}>Forgot password?</Text>
           </TouchableOpacity>
+        </View>
 
+        <View style={styles.bottomContainer}>
           <Button
-            onPress={handleLogin}
+            onPress={() => {
+              dismissKeyboard();
+              handleLogin();
+            }}
             loading={loading}
             fullWidth
             style={styles.loginButton}
@@ -157,6 +180,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxxl,
     paddingBottom: spacing.xl,
+    justifyContent: 'space-between',
   },
   logoContainer: {
     alignItems: 'center',
@@ -190,16 +214,6 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: fontSizes.sm,
   },
-  successContainer: {
-    backgroundColor: '#d4edda',  // light green
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.lg,
-  },
-  successText: {
-    color: '#28a745',  // green
-    fontSize: fontSizes.sm,
-  },
   inputContainer: {
     marginBottom: spacing.lg,
   },
@@ -227,7 +241,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
   },
   loginButton: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   registerContainer: {
     flexDirection: 'row',
@@ -242,5 +256,10 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: fontSizes.sm,
     fontWeight: '600',
+  },
+  bottomContainer: {
+    width: '100%',
+    marginTop: 'auto',
+    paddingTop: spacing.xl,
   },
 }); 

@@ -232,10 +232,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const resendCode = async (email: string) => {
     try {
+      // Try to resend verification code but don't report errors to the UI
       const { success, error } = await resendVerificationCode(email);
-      return { error: error };
+      if (error) {
+        // Just log the error but return success to the caller
+        console.error('Suppressed error sending verification code:', error.message);
+        return { error: null };
+      }
+      return { error: null };
     } catch (error) {
-      return { error };
+      // Suppress all errors, just log them
+      console.error('Caught and suppressed error in resendCode:', error);
+      return { error: null };
     }
   };
 

@@ -81,6 +81,7 @@ export const Button = ({
           ...buttonStyle,
           paddingVertical: spacing.xs,
           paddingHorizontal: spacing.md,
+          height: 40,
         };
         break;
       case 'medium':
@@ -88,6 +89,7 @@ export const Button = ({
           ...buttonStyle,
           paddingVertical: spacing.sm,
           paddingHorizontal: spacing.lg,
+          height: 52,
         };
         break;
       case 'large':
@@ -95,6 +97,7 @@ export const Button = ({
           ...buttonStyle,
           paddingVertical: spacing.md,
           paddingHorizontal: spacing.xl,
+          height: 60,
         };
         break;
     }
@@ -186,5 +189,6 @@ const styles = StyleSheet.create({
   text: {
     fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
 }); 

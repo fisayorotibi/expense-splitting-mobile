@@ -69,7 +69,7 @@ export default function Onboarding3Screen() {
   };
 
   const handleEmailLogin = () => {
-    closeModal(() => navigation.navigate('Login'));
+    closeModal(() => navigation.navigate('EnterEmail'));
   };
 
   const handleSocialLogin = (provider: 'google' | 'apple') => {

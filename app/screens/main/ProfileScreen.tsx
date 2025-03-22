@@ -37,7 +37,13 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await signOut();
+
+              // Instead of using navigation.reset, we'll work with the root navigator
+              // Let the RootNavigator handle the state change naturally
+              // The auth state change listener in RootNavigator will detect the session is null
+              // and navigate to Auth automatically
             } catch (error) {
+              console.error('Error signing out:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
             }
           },

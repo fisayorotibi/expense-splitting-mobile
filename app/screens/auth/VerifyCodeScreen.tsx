@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -79,6 +80,11 @@ export default function VerifyCodeScreen() {
     }
   };
 
+  // Function to dismiss keyboard when necessary
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -110,9 +116,14 @@ export default function VerifyCodeScreen() {
               maxLength={6}
             />
           </View>
+        </View>
 
+        <View style={styles.bottomContainer}>
           <Button
-            onPress={handleVerify}
+            onPress={() => {
+              dismissKeyboard();
+              handleVerify();
+            }}
             loading={loading}
             fullWidth
             style={styles.verifyButton}
@@ -121,7 +132,10 @@ export default function VerifyCodeScreen() {
           </Button>
 
           <Button
-            onPress={handleResendCode}
+            onPress={() => {
+              dismissKeyboard();
+              handleResendCode();
+            }}
             variant="text"
             fullWidth
             style={styles.resendButton}
@@ -144,6 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxxl,
     paddingBottom: spacing.xl,
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: fontSizes.xxxl,
@@ -193,6 +208,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   resendButton: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  bottomContainer: {
+    width: '100%',
+    marginTop: 'auto',
+    paddingTop: spacing.xl,
   },
 }); 

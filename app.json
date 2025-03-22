@@ -12,6 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -22,9 +25,29 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "build": {
+        "babel": {
+          "include": [
+            "@expo/metro-runtime",
+            "expo-router"
+          ]
+        }
+      },
+      "renderer": "dom",
+      "proxy": false,
+      "viewport": {
+        "width": "390px",
+        "initialScale": 1,
+        "maximumScale": 1,
+        "userScalable": false
+      }
     },
     "scheme": "expense-splitter",
-    "plugins": []
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
