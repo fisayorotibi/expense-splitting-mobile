@@ -250,7 +250,11 @@ export default function ActivityScreen() {
         </View>
       ) : (
         <View style={styles.listContainer}>
-          {activities.map(item => renderActivityItem({ item }))}
+          {activities.map(item => (
+            <React.Fragment key={item.id}>
+              {renderActivityItem({ item })}
+            </React.Fragment>
+          ))}
         </View>
       )}
     </ScreenHeader>

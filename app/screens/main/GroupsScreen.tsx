@@ -164,7 +164,11 @@ export default function GroupsScreen() {
         </View>
       ) : (
         <View style={styles.groupsList}>
-          {groups.map(group => renderGroupItem({ item: group }))}
+          {groups.map(group => (
+            <React.Fragment key={group.id}>
+              {renderGroupItem({ item: group })}
+            </React.Fragment>
+          ))}
         </View>
       )}
     </ScreenHeader>
