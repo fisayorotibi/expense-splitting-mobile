@@ -29,6 +29,7 @@ interface HeaderProps {
   titleAlignment?: 'center' | 'left';
   transparent?: boolean;
   tintColor?: string;
+  logoComponent?: React.ReactNode;
 }
 
 export const Header = ({
@@ -39,7 +40,8 @@ export const Header = ({
   headerSize = 'medium',
   titleAlignment = 'center',
   transparent = false,
-  tintColor = colors.primary
+  tintColor = colors.primary,
+  logoComponent
 }: HeaderProps) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -107,7 +109,7 @@ export const Header = ({
           )}
           
           {/* Left-aligned title */}
-          {titleAlignment === 'left' && headerSize !== 'large' && (
+          {titleAlignment === 'left' && headerSize !== 'large' && !logoComponent && (
             <Text 
               style={[
                 styles.title, 
@@ -121,17 +123,25 @@ export const Header = ({
           )}
         </View>
         
-        {/* Center Title - Only for center alignment */}
+        {/* Center Title or Logo - Only for center alignment */}
         {headerSize !== 'large' && titleAlignment === 'center' && (
-          <Text 
-            style={[
-              styles.title, 
-              { color: transparent ? colors.white : colors.text.primary }
-            ]} 
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
+          <>
+            {logoComponent ? (
+              <View style={styles.logoContainer}>
+                {logoComponent}
+              </View>
+            ) : (
+              <Text 
+                style={[
+                  styles.title, 
+                  { color: transparent ? colors.white : colors.text.primary }
+                ]} 
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+            )}
+          </>
         )}
         
         {/* Right Side - Action Button */}
@@ -163,7 +173,7 @@ export const Header = ({
       </View>
       
       {/* Large Title (iOS 11+ style) - Only show in large mode */}
-      {isLargeHeader && (
+      {isLargeHeader && !logoComponent && (
         <Text 
           style={[
             styles.largeTitle,
@@ -174,6 +184,16 @@ export const Header = ({
         >
           {title}
         </Text>
+      )}
+
+      {/* Large Logo - Only show in large mode */}
+      {isLargeHeader && logoComponent && (
+        <View style={[
+          styles.largeLogo,
+          titleAlignment === 'left' ? styles.leftLargeTitle : null
+        ]}>
+          {logoComponent}
+        </View>
       )}
     </View>
   );
@@ -243,5 +263,15 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: fontSizes.sm,
     fontWeight: '500',
+  },
+  logoContainer: {
+    flex: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  largeLogo: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    alignItems: 'center',
   },
 }); 

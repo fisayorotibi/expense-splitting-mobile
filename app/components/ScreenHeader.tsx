@@ -25,6 +25,7 @@ interface ScreenHeaderProps {
   scrollEnabled?: boolean;
   refreshControl?: React.ReactElement<RefreshControlProps>;
   tintColor?: string;
+  logoComponent?: React.ReactNode;
 }
 
 export const ScreenHeader = ({
@@ -38,7 +39,8 @@ export const ScreenHeader = ({
   transparent = false,
   scrollEnabled = true,
   refreshControl,
-  tintColor
+  tintColor,
+  logoComponent
 }: ScreenHeaderProps) => {
   const insets = useSafeAreaInsets();
   
@@ -63,6 +65,7 @@ export const ScreenHeader = ({
         titleAlignment={titleAlignment}
         transparent={transparent}
         tintColor={tintColor}
+        logoComponent={logoComponent}
       />
       
       {scrollEnabled ? (

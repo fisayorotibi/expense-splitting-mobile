@@ -17,6 +17,7 @@ import { colors, spacing, fontSizes, borderRadius, shadows } from '../../utils/t
 import { ExpenseSplit, Settlement } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import EqualizeLogoSvg from '../../assets/svg/EqualizeLogoSvg';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -181,7 +182,7 @@ export default function HomeScreen() {
 
   return (
     <ScreenHeader
-      title="Equalize"
+      title=""
       headerSize="medium"
       rightAction={{
         icon: 'notifications-outline',
@@ -190,6 +191,7 @@ export default function HomeScreen() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
+      logoComponent={<EqualizeLogoSvg width={75} height={20} color={colors.text.primary} />}
     >
       {/* Balance Summary */}
       <View style={styles.section}>
