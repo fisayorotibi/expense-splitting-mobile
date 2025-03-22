@@ -213,12 +213,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Code verified successfully');
       
       try {
-        // Always sign out immediately after verification
-        // This prevents automatic login and allows us to collect display name and password
-        await supabase.auth.signOut();
-        console.log('Signed out after verification to prepare for display name collection');
-        
-        // Don't create any profiles here - we'll do that after collecting display name and password
+        // No longer signing out after verification since display name is already collected
+        // Simply return success
         return { error: null, success: true };
       } catch (innerError) {
         console.error('Error during post-verification process:', innerError);
