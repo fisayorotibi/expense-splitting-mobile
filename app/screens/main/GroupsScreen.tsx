@@ -134,7 +134,8 @@ export default function GroupsScreen() {
   return (
     <ScreenHeader
       title="My Circles"
-      useLargeTitle={true}
+      headerSize="medium"
+      titleAlignment="left"
       rightAction={{
         icon: 'add-outline',
         onPress: navigateToCreateGroup

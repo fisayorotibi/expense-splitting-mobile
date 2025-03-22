@@ -45,15 +45,16 @@ export const MainTabNavigator = () => {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary,
+        tabBarInactiveTintColor: colors.gray[400],
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: Platform.OS === 'ios' ? '500' : 'normal',
         },
         // iOS-style tab bar with blur effect
         tabBarStyle: {
           ...styles.tabBar,
-          height: Platform.OS === 'ios' ? 84 : 60, // Adjusted height for iOS (includes safe area)
+          height: Platform.OS === 'ios' ? 88 : 64, // Increased height to accommodate more top padding
+          paddingTop: Platform.OS === 'ios' ? 8 : 6, // Add padding to the top
           paddingBottom: Platform.OS === 'ios' ? 24 : 8, // Account for safe area on iOS
         },
       })}
@@ -93,17 +94,17 @@ export const MainTabNavigator = () => {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.background.secondary,
-    borderTopColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.1)' : colors.border.light,
-    borderTopWidth: Platform.OS === 'ios' ? 0.5 : 1,
+    borderTopColor: 'transparent',
+    borderTopWidth: 0,
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(0,0,0,0.3)',
-        shadowOffset: { width: 0, height: -1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
+        shadowColor: 'rgba(0,0,0,0.1)',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 8,
+        elevation: 4,
       },
     }),
   },

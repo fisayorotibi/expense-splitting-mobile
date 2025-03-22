@@ -181,8 +181,8 @@ export default function HomeScreen() {
 
   return (
     <ScreenHeader
-      title="Home"
-      useLargeTitle={true}
+      title="Equalize"
+      headerSize="medium"
       rightAction={{
         icon: 'notifications-outline',
         onPress: handleNotificationsPress

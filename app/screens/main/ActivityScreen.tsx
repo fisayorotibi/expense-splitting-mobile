@@ -229,7 +229,8 @@ export default function ActivityScreen() {
   return (
     <ScreenHeader
       title="Activity"
-      useLargeTitle={true}
+      headerSize="medium"
+      titleAlignment="left"
       rightAction={{
         icon: 'filter-outline',
         onPress: () => Alert.alert('Filter', 'Filter functionality coming soon')

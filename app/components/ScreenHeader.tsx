@@ -19,7 +19,8 @@ interface ScreenHeaderProps {
     label?: string;
     onPress: () => void;
   };
-  useLargeTitle?: boolean;
+  headerSize?: 'medium' | 'large';
+  titleAlignment?: 'center' | 'left';
   transparent?: boolean;
   scrollEnabled?: boolean;
   refreshControl?: React.ReactElement<RefreshControlProps>;
@@ -32,7 +33,8 @@ export const ScreenHeader = ({
   showBackButton = false,
   rightAction,
   leftAction,
-  useLargeTitle = false,
+  headerSize = 'medium',
+  titleAlignment = 'center',
   transparent = false,
   scrollEnabled = true,
   refreshControl,
@@ -57,7 +59,8 @@ export const ScreenHeader = ({
         showBackButton={showBackButton}
         rightAction={rightAction}
         leftAction={leftAction}
-        largeTitleMode={useLargeTitle}
+        headerSize={headerSize}
+        titleAlignment={titleAlignment}
         transparent={transparent}
         tintColor={tintColor}
       />

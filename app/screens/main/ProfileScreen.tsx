@@ -90,7 +90,8 @@ export default function ProfileScreen() {
   return (
     <ScreenHeader
       title="Profile"
-      useLargeTitle={true}
+      headerSize="medium"
+      titleAlignment="left"
       rightAction={{
         icon: 'cog-outline',
         onPress: navigateToSettings

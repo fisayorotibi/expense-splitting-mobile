@@ -25,7 +25,8 @@ interface HeaderProps {
     label?: string;
     onPress: () => void;
   };
-  largeTitleMode?: boolean;
+  headerSize?: 'medium' | 'large';
+  titleAlignment?: 'center' | 'left';
   transparent?: boolean;
   tintColor?: string;
 }
@@ -35,7 +36,8 @@ export const Header = ({
   showBackButton = false,
   rightAction,
   leftAction,
-  largeTitleMode = false,
+  headerSize = 'medium',
+  titleAlignment = 'center',
   transparent = false,
   tintColor = colors.primary
 }: HeaderProps) => {
@@ -46,7 +48,8 @@ export const Header = ({
     navigation.goBack();
   };
 
-  const headerHeight = largeTitleMode ? 90 : 44;
+  const isLargeHeader = headerSize === 'large';
+  const headerHeight = isLargeHeader ? 90 : 60;
   const paddingTop = Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0;
 
   return (
@@ -57,7 +60,7 @@ export const Header = ({
     ]}>
       <StatusBar
         barStyle={transparent ? "light-content" : "dark-content"}
-        backgroundColor={transparent ? 'transparent' : colors.background.secondary}
+        backgroundColor={transparent ? 'transparent' : colors.background.primary}
         translucent
       />
       
@@ -102,10 +105,24 @@ export const Header = ({
               )}
             </TouchableOpacity>
           )}
+          
+          {/* Left-aligned title */}
+          {titleAlignment === 'left' && headerSize !== 'large' && (
+            <Text 
+              style={[
+                styles.title, 
+                styles.leftTitle,
+                { color: transparent ? colors.white : colors.text.primary }
+              ]} 
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+          )}
         </View>
         
-        {/* Center Title */}
-        {!largeTitleMode && (
+        {/* Center Title - Only for center alignment */}
+        {headerSize !== 'large' && titleAlignment === 'center' && (
           <Text 
             style={[
               styles.title, 
@@ -145,11 +162,12 @@ export const Header = ({
         </View>
       </View>
       
-      {/* Large Title (iOS 11+ style) */}
-      {largeTitleMode && (
+      {/* Large Title (iOS 11+ style) - Only show in large mode */}
+      {isLargeHeader && (
         <Text 
           style={[
             styles.largeTitle,
+            titleAlignment === 'left' ? styles.leftLargeTitle : null,
             { color: transparent ? colors.white : colors.text.primary }
           ]}
           numberOfLines={1}
@@ -164,9 +182,8 @@ export const Header = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: colors.background.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
+    backgroundColor: colors.background.primary,
+    borderBottomWidth: 0,
     paddingHorizontal: spacing.md,
   },
   transparentHeader: {
@@ -194,14 +211,25 @@ const styles = StyleSheet.create({
   title: {
     flex: 2,
     textAlign: 'center',
-    fontSize: fontSizes.md,
+    fontSize: 22,
     fontWeight: '600',
   },
+  leftTitle: {
+    flex: 0,
+    textAlign: 'left',
+    marginLeft: spacing.sm,
+    fontSize: 22,
+    fontWeight: '700',
+  },
   largeTitle: {
-    fontSize: fontSizes.xxl,
+    fontSize: fontSizes.xxxl,
     fontWeight: '700',
     marginTop: spacing.xs,
     marginBottom: spacing.sm,
+  },
+  leftLargeTitle: {
+    textAlign: 'left',
+    paddingLeft: spacing.xs,
   },
   backButton: {
     padding: spacing.xs,
